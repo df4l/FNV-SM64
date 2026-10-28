@@ -4,7 +4,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(libsm64 C)
 
-set(SM64_FORK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../sm64-san-andreas/libsm64" CACHE PATH "sm64-san-andreas libsm64 fork")
+set(SM64_FORK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/sm64-san-andreas/libsm64" CACHE PATH "sm64-san-andreas libsm64 fork")
 set(SM64_PATCH "${CMAKE_CURRENT_SOURCE_DIR}/libsm64-msvc.patch")
 set(SRC "${CMAKE_BINARY_DIR}/src")
 

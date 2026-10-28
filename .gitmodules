@@ -1,0 +1,3 @@
+[submodule "third_party/sm64-san-andreas"]
+	path = third_party/sm64-san-andreas
+	url = https://github.com/headshot2017/sm64-san-andreas.git
