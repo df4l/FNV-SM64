@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Derived from nvse_plugin_example.vcxproj (xNVSE 0ccd23ad); GECK and NoGore configs dropped. -->
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{ED9DA071-983C-47B4-AD4E-5E4BD097D2A7}</ProjectGuid>
+    <RootNamespace>nvse_sm64</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Release'" Label="Configuration">
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup>
+    <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)'=='Debug'">true</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)'=='Release'">false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)\..\..\sm64-san-andreas\libsm64\src;$(SolutionDir)\..;$(SolutionDir)\..\nvse;$(SolutionDir)\..\nvse\nvse;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_USRDLL;RUNTIME_VERSION=0x040020D0;RUNTIME;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <ForcedIncludeFiles>nvse/prefix.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <ModuleDefinitionFile>exports.def</ModuleDefinitionFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention />
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+    <PostBuildEvent>
+      <Message>Installing DLL...</Message>
+      <Command>if exist "$(FalloutNVPath)\Data\NVSE\Plugins" (
+ copy "$(TargetPath)" "$(FalloutNVPath)\Data\NVSE\Plugins\$(TargetFileName)"
+ if not exist "$(FalloutNVPath)\Data\NVSE\Plugins\sm64\sm64.ini" copy "$(ProjectDir)sm64.ini" "$(FalloutNVPath)\Data\NVSE\Plugins\sm64\sm64.ini"
+)</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\nvse\nvse\containers.cpp" />
+    <ClCompile Include="..\nvse\nvse\GameAPI.cpp" />
+    <ClCompile Include="..\nvse\nvse\GameBSExtraData.cpp" />
+    <ClCompile Include="..\nvse\nvse\GameData.cpp" />
+    <ClCompile Include="..\nvse\nvse\GameExtraData.cpp" />
+    <ClCompile Include="..\nvse\nvse\GameForms.cpp" />
+    <ClCompile Include="..\nvse\nvse\GameObjects.cpp" />
+    <ClCompile Include="..\nvse\nvse\GameOSDepend.cpp" />
+    <ClCompile Include="..\nvse\nvse\GameProcess.cpp" />
+    <ClCompile Include="..\nvse\nvse\GameRTTI.cpp" />
+    <ClCompile Include="..\nvse\nvse\GameScript.cpp" />
+    <ClCompile Include="..\nvse\nvse\GameSettings.cpp" />
+    <ClCompile Include="..\nvse\nvse\GameTasks.cpp" />
+    <ClCompile Include="..\nvse\nvse\GameTiles.cpp" />
+    <ClCompile Include="..\nvse\nvse\GameTypes.cpp" />
+    <ClCompile Include="..\nvse\nvse\NiTypes.cpp" />
+    <ClCompile Include="..\nvse\nvse\printf.cpp" />
+    <ClCompile Include="..\nvse\nvse\SafeWrite.cpp" />
+    <ClCompile Include="..\nvse\nvse\Utilities.cpp" />
+    <ClCompile Include="..\nvse\nvse\utility.cpp" />
+    <ClCompile Include="dllmain.c">
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="sm64_loader.cpp" />
+    <ClCompile Include="config.cpp" />
+    <ClCompile Include="game_state.cpp" />
+    <ClCompile Include="tick.cpp" />
+    <ClCompile Include="mario.cpp" />
+    <ClCompile Include="player_control.cpp" />
+    <ClCompile Include="player_hide.cpp" />
+    <ClCompile Include="mario_render.cpp" />
+    <ClCompile Include="mario_input.cpp" />
+    <ClCompile Include="camera.cpp" />
+    <ClCompile Include="control_filter.cpp" />
+    <ClCompile Include="collision_objects.cpp" />
+    <ClCompile Include="collision.cpp" />
+    <ClCompile Include="collision_statics.cpp" />
+    <ClCompile Include="audio.cpp" />
+    <ClCompile Include="gameplay.cpp" />
+    <ClCompile Include="npc_colliders.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\nvse\nvse\PluginAPI.h" />
+    <ClInclude Include="sm64_loader.h" />
+    <ClInclude Include="config.h" />
+    <ClInclude Include="audio.h" />
+    <ClInclude Include="gameplay.h" />
+    <ClInclude Include="npc_colliders.h" />
+    <ClInclude Include="game_addrs.h" />
+    <ClInclude Include="game_state.h" />
+    <ClInclude Include="tick.h" />
+    <ClInclude Include="mario.h" />
+    <ClInclude Include="player_control.h" />
+    <ClInclude Include="player_hide.h" />
+    <ClInclude Include="units.h" />
+    <ClInclude Include="mario_render.h" />
+    <ClInclude Include="mario_input.h" />
+    <ClInclude Include="camera.h" />
+    <ClInclude Include="control_filter.h" />
+    <ClInclude Include="collision.h" />
+    <ClInclude Include="collision_objects.h" />
+    <ClInclude Include="..\nvse\nvse\SafeWrite.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="exports.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\common\common_vc9.vcxproj">
+      <Project>{20c6411c-596f-4b85-be4e-8bc91f59d8a6}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

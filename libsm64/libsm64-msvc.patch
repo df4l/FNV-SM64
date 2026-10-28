@@ -1,0 +1,226 @@
+diff --git a/decomp/audio/external.c b/decomp/audio/external.c
+index bf33aba..ab9e6e2 100644
+--- a/decomp/audio/external.c
++++ b/decomp/audio/external.c
+@@ -10,6 +10,7 @@
+ #include "../game/level_update.h"
+ #include "../game/camera.h"
+ #include <seq_ids.h>
++#include "../../load_audio_data.h"
+ 
+ #define SOUND_BANK_COUNT 10
+ #define gCurrLevelNum 0
+@@ -2160,6 +2161,10 @@ void get_currently_playing_sound(u8 bank, u8 *numPlayingSounds, u8 *numSoundsInB
+  * Called from threads: thread5_game_loop
+  */
+ void stop_sound(u32 soundBits, f32 *pos) {
++    // libsm64: the sound lists are only set up by sm64_audio_init; zeroed lists loop forever (act_waking_up)
++    if (!g_is_audio_initialized) {
++        return;
++    }
+     u8 bank = (soundBits & SOUNDARGS_MASK_BANK) >> SOUNDARGS_SHIFT_BANK;
+     u8 soundIndex = sSoundBanks[bank][0].next;
+ 
+diff --git a/decomp/engine/math_util.c b/decomp/engine/math_util.c
+index 813353a..f2a7a2e 100644
+--- a/decomp/engine/math_util.c
++++ b/decomp/engine/math_util.c
+@@ -2183,12 +2183,14 @@ s16 atan2s(f32 y, f32 x) {
+     return ret;
+ }
+ 
++#ifndef _MSC_VER // unused; clashes with the CRT inline atan2f on MSVC x86
+ /**
+  * Compute the atan2 in radians by calling atan2s and converting the result.
+  */
+ f32 atan2f(f32 y, f32 x) {
+     return (f32) atan2s(y, x) * M_PI / 0x8000;
+ }
++#endif
+ 
+ #define CURVE_BEGIN_1 1
+ #define CURVE_BEGIN_2 2
+diff --git a/decomp/engine/math_util.h b/decomp/engine/math_util.h
+index 5f089e5..7674330 100644
+--- a/decomp/engine/math_util.h
++++ b/decomp/engine/math_util.h
+@@ -68,7 +68,9 @@ void vec3f_set_dist_and_angle(Vec3f from, Vec3f to, f32  dist, s16  pitch, s16
+ s32 approach_s32(s32 current, s32 target, s32 inc, s32 dec);
+ f32 approach_f32(f32 current, f32 target, f32 inc, f32 dec);
+ s16 atan2s(f32 y, f32 x);
++#ifndef _MSC_VER
+ f32 atan2f(f32 a, f32 b);
++#endif
+ void spline_get_weights(Vec4f result, f32 t, UNUSED s32 c);
+ void anim_spline_init(Vec4s *keyFrames);
+ s32 anim_spline_poll(Vec3f result);
+diff --git a/decomp/game/object_stuff.c b/decomp/game/object_stuff.c
+--- a/decomp/game/object_stuff.c
++++ b/decomp/game/object_stuff.c
+@@ -67,7 +67,9 @@ static Vec3s gVec3sZero = { 0, 0, 0 };
+ 
+ static struct Object *try_allocate_object(void) {
+     struct ObjectNode *nextObj;
+-    nextObj = (struct ObjectNode *) malloc(sizeof(struct Object));
++    // Zeroed: the fork's added animInfo.animOverride is never initialised, and heap garbage there
++    // forces an out-of-range animation ID (crash in retrieve_animation_index on the first tick).
++    nextObj = (struct ObjectNode *) calloc(1, sizeof(struct Object));
+     nextObj->prev = NULL;
+     nextObj->next = NULL;
+     return (struct Object *) nextObj;
+diff --git a/decomp/include/PR/libaudio.h b/decomp/include/PR/libaudio.h
+index 81d1c18..e7d3f59 100644
+--- a/decomp/include/PR/libaudio.h
++++ b/decomp/include/PR/libaudio.h
+@@ -4,19 +4,28 @@
+ #include "abi.h"
+ #include <stdlib.h>
+ 
++// Alignment in leading position, accepted by both GCC and MSVC.
++#ifndef SM64_ALIGNAS
++#ifdef _MSC_VER
++#define SM64_ALIGNAS(n) __declspec(align(n))
++#else
++#define SM64_ALIGNAS(n) __attribute__((aligned(n)))
++#endif
++#endif
++
+ typedef struct
+ {
+-    u8 *offset __attribute__((aligned (8)));
+-    s32 len __attribute__((aligned (8)));
++    SM64_ALIGNAS(8) u8 *offset;
++    SM64_ALIGNAS(8) s32 len;
+ } ALSeqData;
+ 
+-typedef struct
++typedef struct SM64_ALIGNAS(16)
+ {
+     unsigned short  revision;
+     unsigned short  seqCount;
+ 	unsigned int pad;
+     ALSeqData seqArray[1];
+-} __attribute__((aligned (16))) ALSeqFile;
++} ALSeqFile;
+ 
+ void alSeqFileNew(ALSeqFile *f, u8 *base);
+ 
+diff --git a/decomp/include/platform_info.h b/decomp/include/platform_info.h
+--- a/decomp/include/platform_info.h
++++ b/decomp/include/platform_info.h
+@@ -7,7 +7,12 @@
+ #else
+ #include <stdint.h>
+ #define IS_64_BIT (UINTPTR_MAX == 0xFFFFFFFFFFFFFFFFU)
++#if defined(__BYTE_ORDER__)
+ #define IS_BIG_ENDIAN (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
++#else
++// MSVC defines neither macro (0 == 0 would mean big-endian); all its targets are little-endian.
++#define IS_BIG_ENDIAN 0
++#endif
+ #endif
+ 
+ #define DOUBLE_SIZE_ON_64_BIT(size) ((size) * 2)
+diff --git a/decomp/tools/convTypes.h b/decomp/tools/convTypes.h
+index 63dc5c8..629cdb2 100644
+--- a/decomp/tools/convTypes.h
++++ b/decomp/tools/convTypes.h
+@@ -3,6 +3,15 @@
+ #include <stdint.h>
+ #include <stdlib.h>
+ 
++// Alignment in leading position, accepted by both GCC and MSVC.
++#ifndef SM64_ALIGNAS
++#ifdef _MSC_VER
++#define SM64_ALIGNAS(n) __declspec(align(n))
++#else
++#define SM64_ALIGNAS(n) __attribute__((aligned(n)))
++#endif
++#endif
++
+ #define TYPE_CTL 1
+ #define TYPE_TBL 2
+ #define TYPE_SEQ 3
+@@ -85,13 +94,13 @@ struct CTL
+ };
+ 
+ struct seqObject{
+-    uintptr_t offset __attribute__((aligned (8)));
+-    unsigned int len __attribute__((aligned (8)));
++    SM64_ALIGNAS(8) uintptr_t offset;
++    SM64_ALIGNAS(8) unsigned int len;
+ };
+ 
+-struct seqFile{
++struct SM64_ALIGNAS(16) seqFile{
+     unsigned short revision;
+     unsigned short seqCount;
+ 	unsigned int pad;
+     struct seqObject seqArray[1];
+-} __attribute__((aligned (16)));
+\ No newline at end of file
++};
+\ No newline at end of file
+diff --git a/decomp/tools/n64graphics.c b/decomp/tools/n64graphics.c
+index 2f28587..b117ebc 100644
+--- a/decomp/tools/n64graphics.c
++++ b/decomp/tools/n64graphics.c
+@@ -1,6 +1,10 @@
+ #include <stdio.h>
+ #include <stdlib.h>
++#ifdef _MSC_VER
++#define strcasecmp _stricmp
++#else
+ #include <strings.h>
++#endif
+ 
+ #define STBI_NO_LINEAR
+ #define STBI_NO_HDR
+diff --git a/decomp/tools/utils.c b/decomp/tools/utils.c
+index 3ba6e3e..08c8580 100644
+--- a/decomp/tools/utils.c
++++ b/decomp/tools/utils.c
+@@ -1,4 +1,6 @@
++#ifndef _MSC_VER
+ #include <dirent.h>
++#endif
+ #include <fcntl.h>
+ #include <stdint.h>
+ #include <stdio.h>
+@@ -222,6 +224,7 @@ long copy_file(const char *src_name, const char *dst_name)
+    return bytes_read;
+ }
+ 
++#ifndef _MSC_VER // no dirent.h on MSVC; unused by libsm64
+ void dir_list_ext(const char *dir, const char *extension, dir_list *list)
+ {
+    char *pool;
+@@ -252,6 +255,7 @@ void dir_list_ext(const char *dir, const char *extension, dir_list *list)
+ 
+    closedir(dfd);
+ }
++#endif
+ 
+ void dir_list_free(dir_list *list)
+ {
+diff --git a/gfx_adapter.h b/gfx_adapter.h
+index 5d1ef49..54e4b6c 100644
+--- a/gfx_adapter.h
++++ b/gfx_adapter.h
+@@ -4,11 +4,11 @@
+ #include "libsm64.h"
+ 
+ // Commented out in gbi.h - Replaced here 
+-#define gDPPipeSync(pkt) ({})
+-#define gSPSetGeometryMode(pkt, word) ({})
+-#define gSPClearGeometryMode(pkt, word) ({})
+-#define gDPFillRectangle(pkt, ulx, uly, lrx, lry) ({})
+-#define gSPViewport(pkt, v) ({})
++#define gDPPipeSync(pkt) ((void)0)
++#define gSPSetGeometryMode(pkt, word) ((void)0)
++#define gSPClearGeometryMode(pkt, word) ((void)0)
++#define gDPFillRectangle(pkt, ulx, uly, lrx, lry) ((void)0)
++#define gSPViewport(pkt, v) ((void)0)
+ extern void gSPMatrix( void *pkt, Mtx *m, uint8_t flags );
+ extern void gSPDisplayList( void *pkt, struct DisplayListNode *dl );
+ 

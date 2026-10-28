@@ -1,0 +1,20 @@
+﻿# Build outputs
+.vs/
+Debug/
+Release/
+x64/
+build/
+libsm64/build/
+*.obj
+*.pdb
+*.ilk
+*.lib
+*.exp
+*.dll
+*.user
+*.log
+
+# Never commit the ROM or ROM-derived data
+*.z64
+*.n64
+*.v64
